@@ -65,8 +65,56 @@ echo.
 echo [*] Starting mock DRL backend server...
 echo.
 
-cd /d "%~dp0..\common\server"
-start "DRL Mock Server" python mock_drl_backend.py --dual
+REM Find the server directory (could be in various locations)
+set "SERVER_DIR="
+
+REM Check installed location first (installer puts it in common\server)
+if exist "%~dp0common\server\mock_drl_backend.py" (
+    set "SERVER_DIR=%~dp0common\server"
+    goto :StartServer
+)
+
+REM Check relative to repo structure (for development)
+if exist "%~dp0..\common\server\mock_drl_backend.py" (
+    set "SERVER_DIR=%~dp0..\common\server"
+    goto :StartServer
+)
+
+REM Check if there's a server subfolder directly
+if exist "%~dp0server\mock_drl_backend.py" (
+    set "SERVER_DIR=%~dp0server"
+    goto :StartServer
+)
+
+REM Check Program Files install
+if exist "%ProgramFiles%\DRL-Community\common\server\mock_drl_backend.py" (
+    set "SERVER_DIR=%ProgramFiles%\DRL-Community\common\server"
+    goto :StartServer
+)
+
+REM Not found
+echo ERROR: Could not find mock_drl_backend.py
+echo.
+echo Please ensure the server files are installed correctly.
+echo Looking in:
+echo   - %~dp0common\server\
+echo   - %~dp0..\common\server\
+echo   - %ProgramFiles%\DRL-Community\common\server\
+pause
+exit /b 1
+
+:StartServer
+echo [OK] Server directory: %SERVER_DIR%
+cd /d "%SERVER_DIR%"
+
+REM Check if Python dependencies are installed
+python -c "import aiohttp" 2>nul
+if %errorlevel% neq 0 (
+    echo [*] Installing Python dependencies...
+    python -m pip install aiohttp requests --quiet
+)
+
+start "DRL Mock Server" cmd /k "python mock_drl_backend.py --dual"
 
 echo.
 echo ===============================================
