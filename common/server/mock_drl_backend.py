@@ -77,6 +77,12 @@ print(f"  Exists: {os.path.exists(GAME_DIR)}")
 MAPS_DIR = os.path.join(GAME_DIR, "DRL Simulator_Data", "StreamingAssets", "game", "content", "maps")
 PLAYER_STATE_PATH = os.path.join(GAME_DIR, "DRL Simulator_Data", "StreamingAssets", "game", "storage", "offline", "state", "player", "player-state.json")
 
+print(f"Maps directory: {MAPS_DIR}")
+print(f"  Exists: {os.path.exists(MAPS_DIR)}")
+if os.path.exists(MAPS_DIR):
+    map_folders = [d for d in os.listdir(MAPS_DIR) if os.path.isdir(os.path.join(MAPS_DIR, d))]
+    print(f"  Found {len(map_folders)} map folders: {map_folders[:5]}{'...' if len(map_folders) > 5 else ''}")
+
 def load_all_tracks():
     """Load all track definitions from local map JSON files - metadata only, no root objects"""
     all_tracks = []
@@ -323,9 +329,14 @@ class DRLMockHandler(BaseHTTPRequestHandler):
     
     def handle_state(self):
         """Handle general state request - return player state from file (Base64 encoded)"""
+        print(f"    Looking for player state at: {PLAYER_STATE_PATH}")
+        print(f"    File exists: {os.path.exists(PLAYER_STATE_PATH)}")
         try:
             with open(PLAYER_STATE_PATH, 'r') as f:
                 player_data = json.load(f)
+            print(f"    Loaded player state with {len(player_data)} keys")
+            if 'circuits-data' in player_data:
+                print(f"    circuits-data: {len(player_data['circuits-data'])} circuits")
         except Exception as e:
             print(f"    Could not read player state: {e}")
             player_data = {}
