@@ -241,6 +241,8 @@ var
   ResultCode: Integer;
   BepInExURL: String;
   BepInExZip: String;
+  PowerShellCmd: String;
+  BepInExDir: String;
 begin
   if CurStep = ssPostInstall then
   begin
@@ -250,18 +252,72 @@ begin
     // Install BepInEx if selected and game was found
     if IsComponentSelected('bepinex') and FileExists(GameDir + '\DRL Simulator.exe') then
     begin
-      BepInExURL := 'https://github.com/BepInEx/BepInEx/releases/download/v5.4.23.2/BepInEx_win_x64_5.4.23.2.zip';
-      BepInExZip := ExpandConstant('{tmp}\BepInEx.zip');
+      BepInExDir := GameDir + '\BepInEx';
       
-      // Download BepInEx (simplified - in production use a proper download method)
-      // For now, we'll just note that manual installation may be needed
+      // Check if BepInEx is already installed
+      if not DirExists(BepInExDir) then
+      begin
+        BepInExURL := 'https://github.com/BepInEx/BepInEx/releases/download/v5.4.23.2/BepInEx_win_x64_5.4.23.2.zip';
+        BepInExZip := ExpandConstant('{tmp}\BepInEx.zip');
+        
+        // Download BepInEx using PowerShell
+        WizardForm.StatusLabel.Caption := 'Downloading BepInEx...';
+        PowerShellCmd := '-ExecutionPolicy Bypass -Command "Invoke-WebRequest -Uri ''' + BepInExURL + ''' -OutFile ''' + BepInExZip + '''"';
+        
+        if Exec('powershell.exe', PowerShellCmd, '', SW_HIDE, ewWaitUntilTerminated, ResultCode) then
+        begin
+          if FileExists(BepInExZip) then
+          begin
+            // Extract BepInEx to game directory
+            WizardForm.StatusLabel.Caption := 'Installing BepInEx...';
+            PowerShellCmd := '-ExecutionPolicy Bypass -Command "Expand-Archive -Path ''' + BepInExZip + ''' -DestinationPath ''' + GameDir + ''' -Force"';
+            
+            if Exec('powershell.exe', PowerShellCmd, '', SW_HIDE, ewWaitUntilTerminated, ResultCode) then
+            begin
+              // Create plugins directory
+              ForceDirectories(BepInExDir + '\plugins');
+              
+              // Copy plugins from installed app to game
+              WizardForm.StatusLabel.Caption := 'Copying plugins...';
+              PowerShellCmd := '-ExecutionPolicy Bypass -Command "if (Test-Path ''' + ExpandConstant('{app}\plugins\*.dll') + ''') { Copy-Item ''' + ExpandConstant('{app}\plugins\*.dll') + ''' ''' + BepInExDir + '\plugins\'' -Force }"';
+              Exec('powershell.exe', PowerShellCmd, '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
+            end
+            else
+            begin
+              MsgBox('Failed to extract BepInEx. Please run install-bepinex.bat manually.', mbError, MB_OK);
+            end;
+            
+            // Clean up
+            DeleteFile(BepInExZip);
+          end
+          else
+          begin
+            MsgBox('Failed to download BepInEx. Please run install-bepinex.bat manually.', mbError, MB_OK);
+          end;
+        end
+        else
+        begin
+          MsgBox('PowerShell failed. Please run install-bepinex.bat manually.', mbError, MB_OK);
+        end;
+      end
+      else
+      begin
+        // BepInEx already installed, just copy plugins
+        WizardForm.StatusLabel.Caption := 'BepInEx already installed, copying plugins...';
+        ForceDirectories(BepInExDir + '\plugins');
+        PowerShellCmd := '-ExecutionPolicy Bypass -Command "if (Test-Path ''' + ExpandConstant('{app}\plugins\*.dll') + ''') { Copy-Item ''' + ExpandConstant('{app}\plugins\*.dll') + ''' ''' + BepInExDir + '\plugins\'' -Force }"';
+        Exec('powershell.exe', PowerShellCmd, '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
+      end;
     end;
     
     // Install Python packages if Python is installed
     if PythonInstalled then
     begin
+      WizardForm.StatusLabel.Caption := 'Installing Python packages...';
       Exec('python', '-m pip install aiohttp requests --quiet', '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
     end;
+    
+    WizardForm.StatusLabel.Caption := 'Installation complete!';
   end;
 end;
 
