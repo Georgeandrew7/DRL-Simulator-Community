@@ -93,8 +93,6 @@ download_appimage_tools() {
 # Create AppDir Structure
 #===============================================================================
 create_appdir() {
-    log_info "Creating AppDir structure..."
-    
     local appdir="$SCRIPT_DIR/installer/build/${APP_NAME}.AppDir"
     rm -rf "$appdir"
     mkdir -p "$appdir"
@@ -109,6 +107,7 @@ create_appdir() {
     mkdir -p "$appdir/usr/share/drl-community/tools"
     mkdir -p "$appdir/usr/share/drl-community/scripts"
     
+    # Return path (only output)
     echo "$appdir"
 }
 
@@ -634,9 +633,7 @@ LAUNCHER
 # Main
 #===============================================================================
 main() {
-    print_header
-    
-    # Parse arguments
+    # Parse arguments FIRST (before print_header uses VERSION)
     local build_deb=false
     for arg in "$@"; do
         case "$arg" in
@@ -654,9 +651,12 @@ main() {
         esac
     done
     
+    print_header
+    
     check_dependencies
     download_appimage_tools
     
+    log_info "Creating AppDir structure..."
     local appdir=$(create_appdir)
     copy_app_files "$appdir"
     create_desktop_entry "$appdir"
