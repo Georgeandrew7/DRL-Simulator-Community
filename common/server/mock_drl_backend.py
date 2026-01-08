@@ -403,35 +403,21 @@ class DRLMockHandler(BaseHTTPRequestHandler):
         self.send_json_response(data)
     
     def handle_maps_updated(self):
-        """Handle maps update check - return all tracks when full=true, otherwise empty array
+        """Handle maps update check - return empty to indicate no downloads needed
         
-        The game calls this with full=true on startup to get ALL available maps.
-        Without full=true, it's checking for incremental updates (return empty).
+        The tracks are already local (in StreamingAssets), so we don't need to
+        tell the game to download anything. Returning an empty array means
+        "no updates available" which prevents the "Downloading Tracks" hang.
+        
+        The game gets its track list from /circuits/ and /progression/maps/ instead.
         """
-        from urllib.parse import urlparse, parse_qs
-        parsed = urlparse(self.path)
-        params = parse_qs(parsed.query)
-        
-        full = params.get('full', ['false'])[0].lower() == 'true'
-        
-        if full:
-            # Return ALL tracks when full=true - this populates the map list!
-            tracks = ALL_TRACKS
-            print(f"    MAPS UPDATED (full=true): Returning {len(tracks)} tracks")
-            data = {
-                "success": True,
-                "message": None,
-                "encoded": False,
-                "data": tracks
-            }
-        else:
-            # No incremental updates needed
-            data = {
-                "success": True,
-                "message": None,
-                "encoded": False,
-                "data": []
-            }
+        print(f"    MAPS UPDATED: Returning empty (tracks are already local)")
+        data = {
+            "success": True,
+            "message": None,
+            "encoded": False,
+            "data": []  # Empty = no downloads needed
+        }
         self.send_json_response(data)
     
     def handle_circuits(self):
