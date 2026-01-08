@@ -1,0 +1,33 @@
+Installation Complete!
+
+DRL Simulator Community Edition has been successfully installed.
+
+What's Next:
+
+1. LAUNCH THE GAME
+   • Open "DRL Offline Mode" from your Applications folder
+   • Or run from Terminal: drl-server
+
+2. START PLAYING
+   • The mock server will start automatically
+   • Launch DRL Simulator from Steam
+   • Enjoy offline gameplay!
+
+3. VERIFY INSTALLATION
+   • Run diagnostics: drl-diagnose
+   • Check server status in the menu bar
+
+Installed Components:
+✓ Mock DRL Backend Server
+✓ BepInEx Mod Framework  
+✓ Community Plugins
+✓ Hosts File Entry
+✓ Launcher Application
+
+Troubleshooting:
+• If the game won't connect, run: drl-diagnose
+• Check logs at: /usr/local/drl-community/logs/
+• Get help: github.com/Georgeandrew7/DRL-Simulator-Community
+
+Thank you for using DRL Simulator Community Edition!
+Join our Discord for updates and multiplayer events.

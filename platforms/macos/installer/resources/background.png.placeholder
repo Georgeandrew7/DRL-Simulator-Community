@@ -1,0 +1,30 @@
+PLACEHOLDER FOR INSTALLER BACKGROUND IMAGE
+
+To create a custom background:
+
+1. Create a PNG image with these specifications:
+   - Size: 660 x 418 pixels (standard macOS installer size)
+   - Format: PNG with transparency support
+   - Content: DRL branding, drone imagery, or community logo
+
+2. Rename this file or replace it:
+   mv your-background.png background.png
+
+3. Suggested design elements:
+   - DRL Simulator logo or drone silhouette
+   - Dark/gaming aesthetic
+   - Subtle gradients work well
+   - Keep text area on right side clear
+
+4. Free resources for creating backgrounds:
+   - Canva (canva.com) - Free templates
+   - GIMP (gimp.org) - Free image editor
+   - Photopea (photopea.com) - Online Photoshop alternative
+
+5. The installer will still work without a background image,
+   it will just use the default macOS installer appearance.
+
+Example background colors that work well:
+- Dark blue: #1a1a2e
+- Racing red: #e63946
+- Metallic gray: #2d3436

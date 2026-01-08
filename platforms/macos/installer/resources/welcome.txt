@@ -1,0 +1,25 @@
+Welcome to the DRL Simulator Community Edition Installer!
+
+This installer will set up everything you need to play DRL Simulator in offline mode with community servers.
+
+What will be installed:
+• Mock DRL Backend Server (Python)
+• BepInEx Mod Framework
+• Community Plugins (SSL Bypass, License Bypass, DRL Community Mod)
+• DRL Offline Mode Launcher App
+• Command-line tools (drl-server, drl-diagnose)
+
+Requirements:
+• DRL Simulator (Steam version) must be installed
+• macOS 10.15 (Catalina) or later
+• Python 3.8 or later
+• Administrator password (for hosts file modification)
+
+The installer will:
+1. Copy server files to /usr/local/drl-community/
+2. Install BepInEx to your DRL Simulator directory
+3. Compile and install community plugins
+4. Add hosts file entry to redirect api.drlgame.com
+5. Create a launcher app in your Applications folder
+
+Click Continue to proceed with the installation.
