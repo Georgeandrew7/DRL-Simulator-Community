@@ -46,34 +46,6 @@ jobs:
           & "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" "platforms\windows\DRL-Community.iss"
         shell: pwsh
 
-      # Sign Windows installer if certificate is available
-      - name: Sign Windows Installer
-        if: ${{ secrets.WINDOWS_CERT_BASE64 != '' }}
-        run: |
-          # Decode certificate from base64
-          $certBytes = [Convert]::FromBase64String("${{ secrets.WINDOWS_CERT_BASE64 }}")
-          $certPath = "$env:RUNNER_TEMP\certificate.pfx"
-          [IO.File]::WriteAllBytes($certPath, $certBytes)
-          
-          # Find the installer
-          $installer = Get-ChildItem "platforms/windows/installer/output/*.exe" | Select-Object -First 1
-          
-          # Sign with signtool
-          & "C:\Program Files (x86)\Windows Kits\10\bin\10.0.22621.0\x64\signtool.exe" sign `
-            /f $certPath `
-            /p "${{ secrets.WINDOWS_CERT_PASSWORD }}" `
-            /tr http://timestamp.digicert.com `
-            /td sha256 `
-            /fd sha256 `
-            /d "DRL Community Edition" `
-            $installer.FullName
-          
-          # Clean up
-          Remove-Item $certPath -Force
-          Write-Host "Signed: $($installer.Name)"
-        shell: pwsh
-        continue-on-error: true
-
       - name: Upload Windows Installer
         uses: actions/upload-artifact@v4
         with:
@@ -102,31 +74,6 @@ jobs:
         with:
           python-version: '3.11'
 
-      # Import Apple certificates for signing (if available)
-      - name: Import Apple Certificates
-        if: ${{ secrets.APPLE_CERT_BASE64 != '' }}
-        run: |
-          # Create temporary keychain
-          KEYCHAIN_PATH=$RUNNER_TEMP/app-signing.keychain-db
-          KEYCHAIN_PASSWORD=$(openssl rand -base64 32)
-          
-          security create-keychain -p "$KEYCHAIN_PASSWORD" $KEYCHAIN_PATH
-          security set-keychain-settings -lut 21600 $KEYCHAIN_PATH
-          security unlock-keychain -p "$KEYCHAIN_PASSWORD" $KEYCHAIN_PATH
-          
-          # Import certificate
-          echo "${{ secrets.APPLE_CERT_BASE64 }}" | base64 --decode > $RUNNER_TEMP/certificate.p12
-          security import $RUNNER_TEMP/certificate.p12 -P "${{ secrets.APPLE_CERT_PASSWORD }}" \
-            -A -t cert -f pkcs12 -k $KEYCHAIN_PATH
-          security list-keychain -d user -s $KEYCHAIN_PATH
-          
-          # Allow codesign to access keychain
-          security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k "$KEYCHAIN_PASSWORD" $KEYCHAIN_PATH
-          
-          echo "APPLE_SIGNING_IDENTITY=${{ secrets.APPLE_SIGNING_IDENTITY }}" >> $GITHUB_ENV
-          echo "KEYCHAIN_PATH=$KEYCHAIN_PATH" >> $GITHUB_ENV
-        continue-on-error: true
-
       - name: Make build script executable
         run: chmod +x platforms/macos/build-installer.sh
 
@@ -135,31 +82,7 @@ jobs:
           # Strip 'v' prefix from version (v1.0.3 -> 1.0.3)
           VERSION_CLEAN=$(echo "${{ env.VERSION }}" | sed 's/^v//')
           cd platforms/macos
-          
-          # Build with signing if identity is available
-          if [ -n "$APPLE_SIGNING_IDENTITY" ]; then
-            ./build-installer.sh --version="$VERSION_CLEAN" --sign "$APPLE_SIGNING_IDENTITY"
-          else
-            ./build-installer.sh --version="$VERSION_CLEAN"
-          fi
-
-      # Notarize the PKG (if credentials available)
-      - name: Notarize macOS Installer
-        if: ${{ secrets.APPLE_ID != '' && secrets.APPLE_APP_PASSWORD != '' }}
-        run: |
-          PKG_FILE=$(find platforms/macos/installer/output -name "*.pkg" | head -1)
-          if [ -n "$PKG_FILE" ]; then
-            echo "Submitting for notarization: $PKG_FILE"
-            xcrun notarytool submit "$PKG_FILE" \
-              --apple-id "${{ secrets.APPLE_ID }}" \
-              --password "${{ secrets.APPLE_APP_PASSWORD }}" \
-              --team-id "${{ secrets.APPLE_TEAM_ID }}" \
-              --wait
-            
-            echo "Stapling notarization ticket..."
-            xcrun stapler staple "$PKG_FILE"
-          fi
-        continue-on-error: true
+          ./build-installer.sh --version="$VERSION_CLEAN"
 
       - name: Upload macOS PKG
         uses: actions/upload-artifact@v4
