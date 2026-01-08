@@ -26,14 +26,14 @@ InfoBeforeFile=installer\README_BEFORE.txt
 InfoAfterFile=installer\README_AFTER.txt
 OutputDir=installer\output
 OutputBaseFilename=DRL-Community-Setup-{#MyAppVersion}
-SetupIconFile=installer\icon.ico
+; SetupIconFile=installer\icon.ico  ; Uncomment when icon.ico is added
 Compression=lzma2/ultra64
 SolidCompression=yes
 WizardStyle=modern
 PrivilegesRequired=admin
 ArchitecturesAllowed=x64
 ArchitecturesInstallIn64BitMode=x64
-UninstallDisplayIcon={app}\icon.ico
+; UninstallDisplayIcon={app}\icon.ico  ; Uncomment when icon.ico is added
 UninstallDisplayName={#MyAppName}
 VersionInfoVersion={#MyAppVersion}
 VersionInfoCompany={#MyAppPublisher}
@@ -84,8 +84,8 @@ Source: "..\..\common\tools\*"; DestDir: "{app}\common\tools"; Flags: ignorevers
 ; Documentation
 Source: "..\..\docs\*"; DestDir: "{app}\docs"; Flags: ignoreversion recursesubdirs createallsubdirs; Components: docs
 
-; Installer resources
-Source: "installer\icon.ico"; DestDir: "{app}"; Flags: ignoreversion; Components: core
+; Installer resources (icon is optional - uncomment when available)
+; Source: "installer\icon.ico"; DestDir: "{app}"; Flags: ignoreversion; Components: core
 
 [Dirs]
 Name: "{app}\certs"
@@ -93,15 +93,15 @@ Name: "{app}\logs"
 Name: "{app}\backups"
 
 [Icons]
-; Start Menu
-Name: "{group}\Start Offline Mode"; Filename: "{app}\start-offline-mode.bat"; WorkingDir: "{app}"; IconFilename: "{app}\icon.ico"; Tasks: startmenu
-Name: "{group}\Update DRL Community"; Filename: "{app}\update.bat"; WorkingDir: "{app}"; IconFilename: "{app}\icon.ico"; Tasks: startmenu
-Name: "{group}\Diagnostics"; Filename: "{app}\diagnose.bat"; WorkingDir: "{app}"; IconFilename: "{app}\icon.ico"; Tasks: startmenu
+; Start Menu (icons will use default Windows icon if icon.ico not present)
+Name: "{group}\Start Offline Mode"; Filename: "{app}\start-offline-mode.bat"; WorkingDir: "{app}"; Tasks: startmenu
+Name: "{group}\Update DRL Community"; Filename: "{app}\update.bat"; WorkingDir: "{app}"; Tasks: startmenu
+Name: "{group}\Diagnostics"; Filename: "{app}\diagnose.bat"; WorkingDir: "{app}"; Tasks: startmenu
 Name: "{group}\Documentation"; Filename: "{app}\docs"; Tasks: startmenu
 Name: "{group}\{cm:UninstallProgram,{#MyAppName}}"; Filename: "{uninstallexe}"; Tasks: startmenu
 
 ; Desktop
-Name: "{autodesktop}\DRL Offline Mode"; Filename: "{app}\start-offline-mode.bat"; WorkingDir: "{app}"; IconFilename: "{app}\icon.ico"; Tasks: desktopicon
+Name: "{autodesktop}\DRL Offline Mode"; Filename: "{app}\start-offline-mode.bat"; WorkingDir: "{app}"; Tasks: desktopicon
 
 [Run]
 ; Post-install actions
