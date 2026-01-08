@@ -403,14 +403,35 @@ class DRLMockHandler(BaseHTTPRequestHandler):
         self.send_json_response(data)
     
     def handle_maps_updated(self):
-        """Handle maps update check - return empty array (no updates needed)"""
-        # Return empty array to indicate no map updates - NOT Base64 encoded
-        data = {
-            "success": True,
-            "message": None,
-            "encoded": False,
-            "data": []  # Empty array = no updates needed
-        }
+        """Handle maps update check - return all tracks when full=true, otherwise empty array
+        
+        The game calls this with full=true on startup to get ALL available maps.
+        Without full=true, it's checking for incremental updates (return empty).
+        """
+        from urllib.parse import urlparse, parse_qs
+        parsed = urlparse(self.path)
+        params = parse_qs(parsed.query)
+        
+        full = params.get('full', ['false'])[0].lower() == 'true'
+        
+        if full:
+            # Return ALL tracks when full=true - this populates the map list!
+            tracks = ALL_TRACKS
+            print(f"    MAPS UPDATED (full=true): Returning {len(tracks)} tracks")
+            data = {
+                "success": True,
+                "message": None,
+                "encoded": False,
+                "data": tracks
+            }
+        else:
+            # No incremental updates needed
+            data = {
+                "success": True,
+                "message": None,
+                "encoded": False,
+                "data": []
+            }
         self.send_json_response(data)
     
     def handle_circuits(self):
