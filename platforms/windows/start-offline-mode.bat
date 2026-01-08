@@ -1,4 +1,5 @@
 @echo off
+setlocal EnableDelayedExpansion
 REM DRL Simulator Self-Hosted Multiplayer Setup for Windows
 REM This script sets up everything needed for offline/LAN play
 
@@ -16,20 +17,16 @@ if %errorlevel% neq 0 (
     exit /b 1
 )
 
-REM Set paths
-set "GAME_DIR=%ProgramFiles(x86)%\Steam\steamapps\common\DRL Simulator"
-set "HOSTS_FILE=%SystemRoot%\System32\drivers\etc\hosts"
-set "HOSTS_ENTRY=127.0.0.1 api.drlgame.com"
-
-REM Check if game exists
-if not exist "%GAME_DIR%\DRL Simulator.exe" (
-    echo ERROR: DRL Simulator not found at default location.
-    echo Please edit this script to set the correct GAME_DIR path.
-    echo.
-    echo Looking for: %GAME_DIR%
+REM Auto-detect game location
+call :FindGame
+if not defined GAME_DIR (
+    echo ERROR: Could not find DRL Simulator installation.
     pause
     exit /b 1
 )
+
+set "HOSTS_FILE=%SystemRoot%\System32\drivers\etc\hosts"
+set "HOSTS_ENTRY=127.0.0.1 api.drlgame.com"
 
 echo [OK] Found DRL Simulator at: %GAME_DIR%
 
@@ -83,3 +80,36 @@ echo.
 echo Close the "DRL Mock Server" window to stop the server.
 echo.
 pause
+endlocal
+exit /b 0
+
+:FindGame
+REM Auto-detect DRL Simulator installation
+set "STEAM_PATHS=%ProgramFiles(x86)%\Steam %ProgramFiles%\Steam C:\Steam D:\Steam E:\Steam F:\Steam"
+set "STEAM_PATHS=%STEAM_PATHS% D:\SteamLibrary E:\SteamLibrary F:\SteamLibrary"
+set "STEAM_PATHS=%STEAM_PATHS% D:\Games\Steam E:\Games\Steam D:\Games\SteamLibrary E:\Games\SteamLibrary"
+
+for %%P in (%STEAM_PATHS%) do (
+    if exist "%%P\steamapps\common\DRL Simulator\DRL Simulator.exe" (
+        set "GAME_DIR=%%P\steamapps\common\DRL Simulator"
+        exit /b 0
+    )
+)
+
+REM Try registry
+for /f "tokens=2*" %%a in ('reg query "HKCU\Software\Valve\Steam" /v SteamPath 2^>nul') do set "STEAM_PATH=%%b"
+if defined STEAM_PATH (
+    set "STEAM_PATH=!STEAM_PATH:/=\!"
+    if exist "!STEAM_PATH!\steamapps\common\DRL Simulator\DRL Simulator.exe" (
+        set "GAME_DIR=!STEAM_PATH!\steamapps\common\DRL Simulator"
+        exit /b 0
+    )
+)
+
+REM Prompt user
+echo DRL Simulator not found automatically.
+echo Please enter the full path to your DRL Simulator folder:
+set /p "GAME_DIR=Path: "
+if exist "%GAME_DIR%\DRL Simulator.exe" exit /b 0
+set "GAME_DIR="
+exit /b 1

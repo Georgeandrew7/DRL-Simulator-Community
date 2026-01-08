@@ -1,4 +1,5 @@
 @echo off
+setlocal EnableDelayedExpansion
 REM Install BepInEx for DRL Simulator on Windows
 REM Downloads and extracts BepInEx to the game directory
 
@@ -7,18 +8,17 @@ echo      BepInEx Installer for DRL Simulator
 echo ===============================================
 echo.
 
-set "GAME_DIR=%ProgramFiles(x86)%\Steam\steamapps\common\DRL Simulator"
-set "BEPINEX_VERSION=5.4.23.2"
-set "BEPINEX_URL=https://github.com/BepInEx/BepInEx/releases/download/v%BEPINEX_VERSION%/BepInEx_win_x64_%BEPINEX_VERSION%.zip"
-set "TEMP_ZIP=%TEMP%\bepinex.zip"
-
-REM Check if game exists
-if not exist "%GAME_DIR%\DRL Simulator.exe" (
-    echo ERROR: DRL Simulator not found at default location.
-    echo Please edit GAME_DIR in this script.
+REM Auto-detect game location
+call :FindGame
+if not defined GAME_DIR (
+    echo ERROR: Could not find DRL Simulator installation.
     pause
     exit /b 1
 )
+
+set "BEPINEX_VERSION=5.4.23.2"
+set "BEPINEX_URL=https://github.com/BepInEx/BepInEx/releases/download/v%BEPINEX_VERSION%/BepInEx_win_x64_%BEPINEX_VERSION%.zip"
+set "TEMP_ZIP=%TEMP%\bepinex.zip"
 
 echo [OK] Found game at: %GAME_DIR%
 
@@ -76,3 +76,36 @@ echo After compiling, copy the DLL files to:
 echo   %GAME_DIR%\BepInEx\plugins\
 echo.
 pause
+endlocal
+exit /b 0
+
+:FindGame
+REM Auto-detect DRL Simulator installation
+set "STEAM_PATHS=%ProgramFiles(x86)%\Steam %ProgramFiles%\Steam C:\Steam D:\Steam E:\Steam F:\Steam"
+set "STEAM_PATHS=%STEAM_PATHS% D:\SteamLibrary E:\SteamLibrary F:\SteamLibrary"
+set "STEAM_PATHS=%STEAM_PATHS% D:\Games\Steam E:\Games\Steam D:\Games\SteamLibrary E:\Games\SteamLibrary"
+
+for %%P in (%STEAM_PATHS%) do (
+    if exist "%%P\steamapps\common\DRL Simulator\DRL Simulator.exe" (
+        set "GAME_DIR=%%P\steamapps\common\DRL Simulator"
+        exit /b 0
+    )
+)
+
+REM Try registry
+for /f "tokens=2*" %%a in ('reg query "HKCU\Software\Valve\Steam" /v SteamPath 2^>nul') do set "STEAM_PATH=%%b"
+if defined STEAM_PATH (
+    set "STEAM_PATH=!STEAM_PATH:/=\!"
+    if exist "!STEAM_PATH!\steamapps\common\DRL Simulator\DRL Simulator.exe" (
+        set "GAME_DIR=!STEAM_PATH!\steamapps\common\DRL Simulator"
+        exit /b 0
+    )
+)
+
+REM Prompt user
+echo DRL Simulator not found automatically.
+echo Please enter the full path to your DRL Simulator folder:
+set /p "GAME_DIR=Path: "
+if exist "%GAME_DIR%\DRL Simulator.exe" exit /b 0
+set "GAME_DIR="
+exit /b 1
