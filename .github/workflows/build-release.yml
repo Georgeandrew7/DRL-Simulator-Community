@@ -115,15 +115,19 @@ jobs:
       - name: Install dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y wget file fuse libfuse2
+          sudo apt-get install -y wget file fuse3 libfuse2 libfuse3-3
+          # Create fuse symlink for compatibility
+          sudo ln -sf /usr/bin/fusermount3 /usr/bin/fusermount || true
 
       - name: Make build script executable
         run: chmod +x platforms/linux/build-appimage.sh
 
       - name: Build Linux Installers
+        env:
+          APPIMAGE_EXTRACT_AND_RUN: 1
         run: |
           cd platforms/linux
-          ./build-appimage.sh --version="${{ env.VERSION }}" --deb
+          ./build-appimage.sh --version=${{ env.VERSION }} --deb
 
       - name: Upload Linux AppImage
         uses: actions/upload-artifact@v4

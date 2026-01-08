@@ -42,12 +42,19 @@ check_dependencies() {
     
     local missing=()
     
-    # Required tools
-    for cmd in wget file fuse; do
+    # Required tools (fuse is optional in CI with APPIMAGE_EXTRACT_AND_RUN=1)
+    for cmd in wget file; do
         if ! command -v "$cmd" &>/dev/null; then
             missing+=("$cmd")
         fi
     done
+    
+    # Check for fuse only if not in extract-and-run mode
+    if [[ -z "$APPIMAGE_EXTRACT_AND_RUN" ]]; then
+        if ! command -v fusermount &>/dev/null && ! command -v fusermount3 &>/dev/null; then
+            missing+=("fuse")
+        fi
+    fi
     
     if [[ ${#missing[@]} -gt 0 ]]; then
         log_error "Missing dependencies: ${missing[*]}"
