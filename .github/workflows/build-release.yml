@@ -1,0 +1,185 @@
+name: Build Release Installers
+
+on:
+  release:
+    types: [created]
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version number (e.g., 1.0.0)'
+        required: true
+        default: '1.0.0'
+
+env:
+  VERSION: ${{ github.event.release.tag_name || github.event.inputs.version }}
+
+jobs:
+  #=============================================================================
+  # Windows Installer (Inno Setup)
+  #=============================================================================
+  build-windows:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install Inno Setup
+        run: |
+          choco install innosetup -y
+
+      - name: Set version in ISS file
+        run: |
+          $content = Get-Content "platforms/windows/DRL-Community.iss" -Raw
+          $content = $content -replace '#define MyAppVersion ".*"', '#define MyAppVersion "${{ env.VERSION }}"'
+          Set-Content "platforms/windows/DRL-Community.iss" $content
+        shell: pwsh
+
+      - name: Build Windows Installer
+        run: |
+          & "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" "platforms\windows\DRL-Community.iss"
+        shell: pwsh
+
+      - name: Upload Windows Installer
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-installer
+          path: platforms/windows/installer/output/*.exe
+
+      - name: Upload to Release
+        if: github.event_name == 'release'
+        uses: softprops/action-gh-release@v1
+        with:
+          files: platforms/windows/installer/output/*.exe
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  #=============================================================================
+  # macOS Installer (PKG/DMG)
+  #=============================================================================
+  build-macos:
+    runs-on: macos-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Make build script executable
+        run: chmod +x platforms/macos/build-installer.sh
+
+      - name: Build macOS Installer
+        run: |
+          cd platforms/macos
+          ./build-installer.sh --version="${{ env.VERSION }}"
+
+      - name: Upload macOS PKG
+        uses: actions/upload-artifact@v4
+        with:
+          name: macos-installer-pkg
+          path: platforms/macos/installer/output/*.pkg
+
+      - name: Upload macOS DMG
+        uses: actions/upload-artifact@v4
+        with:
+          name: macos-installer-dmg
+          path: platforms/macos/installer/output/*.dmg
+          if-no-files-found: ignore
+
+      - name: Upload to Release
+        if: github.event_name == 'release'
+        uses: softprops/action-gh-release@v1
+        with:
+          files: |
+            platforms/macos/installer/output/*.pkg
+            platforms/macos/installer/output/*.dmg
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  #=============================================================================
+  # Linux Installer (AppImage + DEB)
+  #=============================================================================
+  build-linux:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y wget file fuse libfuse2
+
+      - name: Make build script executable
+        run: chmod +x platforms/linux/build-appimage.sh
+
+      - name: Build Linux Installers
+        run: |
+          cd platforms/linux
+          ./build-appimage.sh --version="${{ env.VERSION }}" --deb
+
+      - name: Upload Linux AppImage
+        uses: actions/upload-artifact@v4
+        with:
+          name: linux-appimage
+          path: platforms/linux/installer/output/*.AppImage
+
+      - name: Upload Linux DEB
+        uses: actions/upload-artifact@v4
+        with:
+          name: linux-deb
+          path: platforms/linux/installer/output/*.deb
+          if-no-files-found: ignore
+
+      - name: Upload to Release
+        if: github.event_name == 'release'
+        uses: softprops/action-gh-release@v1
+        with:
+          files: |
+            platforms/linux/installer/output/*.AppImage
+            platforms/linux/installer/output/*.deb
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  #=============================================================================
+  # Create Release Summary
+  #=============================================================================
+  release-summary:
+    needs: [build-windows, build-macos, build-linux]
+    runs-on: ubuntu-latest
+    if: github.event_name == 'release'
+    steps:
+      - name: Update Release Notes
+        uses: softprops/action-gh-release@v1
+        with:
+          append_body: true
+          body: |
+            
+            ---
+            
+            ## 📦 Downloads
+            
+            | Platform | File | Description |
+            |----------|------|-------------|
+            | 🪟 Windows | `DRL-Community-Setup.exe` | Installer with wizard UI |
+            | 🍎 macOS | `DRL-Community-${{ env.VERSION }}.pkg` | Native macOS installer |
+            | 🍎 macOS | `DRL-Community-${{ env.VERSION }}.dmg` | Disk image (alternative) |
+            | 🐧 Linux | `DRL-Community-${{ env.VERSION }}-x86_64.AppImage` | Universal (any distro) |
+            | 🐧 Linux | `drl-community_${{ env.VERSION }}_amd64.deb` | Debian/Ubuntu package |
+            
+            ### Quick Start
+            
+            **Windows:** Download and run the `.exe` installer.
+            
+            **macOS:** Download `.pkg`, right-click → Open (first time).
+            
+            **Linux:** Download `.AppImage`, make executable: `chmod +x *.AppImage`, then run.
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
