@@ -1,5 +1,6 @@
 @echo off
 setlocal EnableDelayedExpansion
+title DRL Simulator Self-Hosted Setup
 REM DRL Simulator Self-Hosted Multiplayer Setup for Windows
 REM This script sets up everything needed for offline/LAN play
 
@@ -13,7 +14,9 @@ net session >nul 2>&1
 if %errorlevel% neq 0 (
     echo ERROR: This script requires Administrator privileges.
     echo Please right-click and select "Run as administrator"
-    pause
+    echo.
+    echo Press any key to exit...
+    pause >nul
     exit /b 1
 )
 
@@ -21,7 +24,9 @@ REM Auto-detect game location
 call :FindGame
 if not defined GAME_DIR (
     echo ERROR: Could not find DRL Simulator installation.
-    pause
+    echo.
+    echo Press any key to exit...
+    pause >nul
     exit /b 1
 )
 
@@ -46,7 +51,9 @@ if %errorlevel% neq 0 (
     echo.
     echo ERROR: Python is not installed or not in PATH.
     echo Please install Python 3.8+ from https://python.org
-    pause
+    echo.
+    echo Press any key to exit...
+    pause >nul
     exit /b 1
 )
 
@@ -100,7 +107,9 @@ echo Looking in:
 echo   - %~dp0common\server\
 echo   - %~dp0..\common\server\
 echo   - %ProgramFiles%\DRL-Community\common\server\
-pause
+echo.
+echo Press any key to exit...
+pause >nul
 exit /b 1
 
 :StartServer
@@ -127,21 +136,46 @@ echo   2. The game should now get past the login screen
 echo.
 echo Close the "DRL Mock Server" window to stop the server.
 echo.
-pause
+echo Press any key to close this window...
+pause >nul
 endlocal
 exit /b 0
 
 :FindGame
 REM Auto-detect DRL Simulator installation
-set "STEAM_PATHS=%ProgramFiles(x86)%\Steam %ProgramFiles%\Steam C:\Steam D:\Steam E:\Steam F:\Steam"
-set "STEAM_PATHS=%STEAM_PATHS% D:\SteamLibrary E:\SteamLibrary F:\SteamLibrary"
-set "STEAM_PATHS=%STEAM_PATHS% D:\Games\Steam E:\Games\Steam D:\Games\SteamLibrary E:\Games\SteamLibrary"
 
-for %%P in (%STEAM_PATHS%) do (
-    if exist "%%P\steamapps\common\DRL Simulator\DRL Simulator.exe" (
-        set "GAME_DIR=%%P\steamapps\common\DRL Simulator"
-        exit /b 0
-    )
+REM Check common Steam locations
+if exist "%ProgramFiles(x86)%\Steam\steamapps\common\DRL Simulator\DRL Simulator.exe" (
+    set "GAME_DIR=%ProgramFiles(x86)%\Steam\steamapps\common\DRL Simulator"
+    exit /b 0
+)
+if exist "%ProgramFiles%\Steam\steamapps\common\DRL Simulator\DRL Simulator.exe" (
+    set "GAME_DIR=%ProgramFiles%\Steam\steamapps\common\DRL Simulator"
+    exit /b 0
+)
+if exist "C:\Steam\steamapps\common\DRL Simulator\DRL Simulator.exe" (
+    set "GAME_DIR=C:\Steam\steamapps\common\DRL Simulator"
+    exit /b 0
+)
+if exist "D:\Steam\steamapps\common\DRL Simulator\DRL Simulator.exe" (
+    set "GAME_DIR=D:\Steam\steamapps\common\DRL Simulator"
+    exit /b 0
+)
+if exist "D:\SteamLibrary\steamapps\common\DRL Simulator\DRL Simulator.exe" (
+    set "GAME_DIR=D:\SteamLibrary\steamapps\common\DRL Simulator"
+    exit /b 0
+)
+if exist "E:\SteamLibrary\steamapps\common\DRL Simulator\DRL Simulator.exe" (
+    set "GAME_DIR=E:\SteamLibrary\steamapps\common\DRL Simulator"
+    exit /b 0
+)
+if exist "D:\Games\Steam\steamapps\common\DRL Simulator\DRL Simulator.exe" (
+    set "GAME_DIR=D:\Games\Steam\steamapps\common\DRL Simulator"
+    exit /b 0
+)
+if exist "D:\Games\SteamLibrary\steamapps\common\DRL Simulator\DRL Simulator.exe" (
+    set "GAME_DIR=D:\Games\SteamLibrary\steamapps\common\DRL Simulator"
+    exit /b 0
 )
 
 REM Try registry
