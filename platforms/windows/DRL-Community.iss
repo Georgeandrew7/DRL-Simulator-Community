@@ -76,7 +76,11 @@ Source: "*.ps1"; DestDir: "{app}"; Flags: ignoreversion; Components: core
 
 ; Server files (already in common, but mark component)
 ; Plugins source
-Source: "..\..\common\plugins\*"; DestDir: "{app}\common\plugins"; Flags: ignoreversion recursesubdirs; Components: plugins
+Source: "..\..\common\plugins\*.cs"; DestDir: "{app}\common\plugins"; Flags: ignoreversion; Components: plugins
+Source: "..\..\common\plugins\*.bat"; DestDir: "{app}\common\plugins"; Flags: ignoreversion; Components: plugins
+
+; Compiled plugin DLLs (built by GitHub Actions)
+Source: "..\..\common\plugins\compiled\*.dll"; DestDir: "{app}\plugins"; Flags: ignoreversion skipifsourcedoesntexist; Components: plugins
 
 ; Tools
 Source: "..\..\common\tools\*"; DestDir: "{app}\common\tools"; Flags: ignoreversion recursesubdirs; Components: tools

@@ -19,13 +19,112 @@ permissions:
 
 jobs:
   #=============================================================================
-  # Windows Installer (Inno Setup)
+  # Build BepInEx Plugins (needed before Windows installer)
   #=============================================================================
-  build-windows:
+  build-plugins:
     runs-on: windows-latest
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Download BepInEx for references
+        run: |
+          # Download BepInEx to get the reference DLLs
+          $bepinexUrl = "https://github.com/BepInEx/BepInEx/releases/download/v5.4.23.2/BepInEx_win_x64_5.4.23.2.zip"
+          Invoke-WebRequest -Uri $bepinexUrl -OutFile "BepInEx.zip"
+          Expand-Archive -Path "BepInEx.zip" -DestinationPath "BepInEx_Extracted"
+        shell: pwsh
+
+      - name: Download Unity DLLs from NuGet
+        run: |
+          # Create a temporary project to restore Unity packages
+          mkdir unity_refs
+          cd unity_refs
+          @"
+          <Project Sdk="Microsoft.NET.Sdk">
+            <PropertyGroup>
+              <TargetFramework>net472</TargetFramework>
+            </PropertyGroup>
+            <ItemGroup>
+              <PackageReference Include="Unity3D.UnityEngine" Version="5.6.0" />
+              <PackageReference Include="Unity3D.UnityEngine.Networking" Version="1.0.1" />
+            </ItemGroup>
+          </Project>
+          "@ | Out-File -FilePath "temp.csproj" -Encoding utf8
+          dotnet restore
+        shell: pwsh
+
+      - name: Create plugin project
+        run: |
+          mkdir build_plugins
+          
+          # Copy source files
+          Copy-Item "common/plugins/SSLBypassPlugin.cs" "build_plugins/"
+          Copy-Item "common/plugins/LicenseBypassPlugin.cs" "build_plugins/"
+          
+          # Create project file
+          @"
+          <Project Sdk="Microsoft.NET.Sdk">
+            <PropertyGroup>
+              <TargetFramework>net472</TargetFramework>
+              <AssemblyName>DRLCommunityPlugins</AssemblyName>
+              <LangVersion>latest</LangVersion>
+              <EnableDefaultCompileItems>true</EnableDefaultCompileItems>
+            </PropertyGroup>
+            <ItemGroup>
+              <Reference Include="BepInEx">
+                <HintPath>..\BepInEx_Extracted\BepInEx\core\BepInEx.dll</HintPath>
+              </Reference>
+              <Reference Include="0Harmony">
+                <HintPath>..\BepInEx_Extracted\BepInEx\core\0Harmony.dll</HintPath>
+              </Reference>
+              <PackageReference Include="Unity3D.UnityEngine" Version="5.6.0" />
+              <PackageReference Include="Unity3D.UnityEngine.Networking" Version="1.0.1" />
+            </ItemGroup>
+          </Project>
+          "@ | Out-File -FilePath "build_plugins/DRLCommunityPlugins.csproj" -Encoding utf8
+        shell: pwsh
+
+      - name: Build plugins
+        run: |
+          cd build_plugins
+          dotnet build -c Release
+        shell: pwsh
+
+      - name: Copy compiled DLLs to common/plugins
+        run: |
+          mkdir -p common/plugins/compiled
+          Copy-Item "build_plugins/bin/Release/net472/DRLCommunityPlugins.dll" "common/plugins/compiled/"
+          Write-Host "Plugin DLL compiled successfully"
+          dir common/plugins/compiled/
+        shell: pwsh
+
+      - name: Upload compiled plugins
+        uses: actions/upload-artifact@v4
+        with:
+          name: compiled-plugins
+          path: common/plugins/compiled/*.dll
+
+  #=============================================================================
+  # Windows Installer (Inno Setup)
+  #=============================================================================
+  build-windows:
+    runs-on: windows-latest
+    needs: build-plugins
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Download compiled plugins
+        uses: actions/download-artifact@v4
+        with:
+          name: compiled-plugins
+          path: common/plugins/compiled
 
       - name: Install Inno Setup
         run: |
