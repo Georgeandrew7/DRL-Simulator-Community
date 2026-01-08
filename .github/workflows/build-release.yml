@@ -11,7 +11,11 @@ on:
         default: '1.0.0'
 
 env:
-  VERSION: ${{ github.event.release.tag_name || github.event.inputs.version }}
+  # Strip 'v' prefix from tag for version number (v1.0.3 -> 1.0.3)
+  VERSION: ${{ github.event.inputs.version || github.event.release.tag_name }}
+
+permissions:
+  contents: write
 
 jobs:
   #=============================================================================
@@ -29,9 +33,12 @@ jobs:
 
       - name: Set version in ISS file
         run: |
+          # Strip 'v' prefix from version (v1.0.3 -> 1.0.3)
+          $version = "${{ env.VERSION }}" -replace '^v', ''
           $content = Get-Content "platforms/windows/DRL-Community.iss" -Raw
-          $content = $content -replace '#define MyAppVersion ".*"', '#define MyAppVersion "${{ env.VERSION }}"'
+          $content = $content -replace '#define MyAppVersion ".*"', "#define MyAppVersion `"$version`""
           Set-Content "platforms/windows/DRL-Community.iss" $content
+          Write-Host "Set version to: $version"
         shell: pwsh
 
       - name: Build Windows Installer
@@ -72,8 +79,10 @@ jobs:
 
       - name: Build macOS Installer
         run: |
+          # Strip 'v' prefix from version (v1.0.3 -> 1.0.3)
+          VERSION_CLEAN=$(echo "${{ env.VERSION }}" | sed 's/^v//')
           cd platforms/macos
-          ./build-installer.sh --version="${{ env.VERSION }}"
+          ./build-installer.sh --version="$VERSION_CLEAN"
 
       - name: Upload macOS PKG
         uses: actions/upload-artifact@v4
@@ -126,8 +135,10 @@ jobs:
         env:
           APPIMAGE_EXTRACT_AND_RUN: 1
         run: |
+          # Strip 'v' prefix from version (v1.0.3 -> 1.0.3)
+          VERSION_CLEAN=$(echo "${{ env.VERSION }}" | sed 's/^v//')
           cd platforms/linux
-          ./build-appimage.sh --version=${{ env.VERSION }} --deb
+          ./build-appimage.sh --version=$VERSION_CLEAN --deb
 
       - name: Upload Linux AppImage
         uses: actions/upload-artifact@v4
