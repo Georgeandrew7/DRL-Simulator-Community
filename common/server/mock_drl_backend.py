@@ -28,11 +28,54 @@ import ssl
 import argparse
 import threading
 
-# Game directory paths - Update this to match your installation
-GAME_DIR = os.environ.get('DRL_GAME_DIR', 
-    os.path.expanduser("~/.local/share/Steam/steamapps/common/DRL Simulator"))
-MAPS_DIR = os.path.join(GAME_DIR, "DRL Simulator_Data/StreamingAssets/game/content/maps")
-PLAYER_STATE_PATH = os.path.join(GAME_DIR, "DRL Simulator_Data/StreamingAssets/game/storage/offline/state/player/player-state.json")
+# Game directory paths - Auto-detect based on platform
+def find_game_directory():
+    """Find DRL Simulator installation directory"""
+    import platform
+    
+    # Check environment variable first
+    env_dir = os.environ.get('DRL_GAME_DIR')
+    if env_dir and os.path.exists(env_dir):
+        return env_dir
+    
+    # Common paths to check
+    if platform.system() == 'Windows':
+        possible_paths = [
+            os.path.expandvars(r"%ProgramFiles(x86)%\Steam\steamapps\common\DRL Simulator"),
+            os.path.expandvars(r"%ProgramFiles%\Steam\steamapps\common\DRL Simulator"),
+            r"C:\Steam\steamapps\common\DRL Simulator",
+            r"D:\Steam\steamapps\common\DRL Simulator",
+            r"D:\SteamLibrary\steamapps\common\DRL Simulator",
+            r"E:\SteamLibrary\steamapps\common\DRL Simulator",
+            r"D:\Games\Steam\steamapps\common\DRL Simulator",
+            r"D:\Games\SteamLibrary\steamapps\common\DRL Simulator",
+        ]
+    elif platform.system() == 'Darwin':  # macOS
+        possible_paths = [
+            os.path.expanduser("~/Library/Application Support/Steam/steamapps/common/DRL Simulator"),
+        ]
+    else:  # Linux
+        possible_paths = [
+            os.path.expanduser("~/.local/share/Steam/steamapps/common/DRL Simulator"),
+            os.path.expanduser("~/.steam/steam/steamapps/common/DRL Simulator"),
+        ]
+    
+    for path in possible_paths:
+        if os.path.exists(path):
+            return path
+    
+    # Return default (may not exist)
+    if platform.system() == 'Windows':
+        return r"C:\Program Files (x86)\Steam\steamapps\common\DRL Simulator"
+    else:
+        return os.path.expanduser("~/.local/share/Steam/steamapps/common/DRL Simulator")
+
+GAME_DIR = find_game_directory()
+print(f"Game directory: {GAME_DIR}")
+print(f"  Exists: {os.path.exists(GAME_DIR)}")
+
+MAPS_DIR = os.path.join(GAME_DIR, "DRL Simulator_Data", "StreamingAssets", "game", "content", "maps")
+PLAYER_STATE_PATH = os.path.join(GAME_DIR, "DRL Simulator_Data", "StreamingAssets", "game", "storage", "offline", "state", "player", "player-state.json")
 
 def load_all_tracks():
     """Load all track definitions from local map JSON files - metadata only, no root objects"""
