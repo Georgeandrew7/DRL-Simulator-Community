@@ -158,7 +158,7 @@ chmod +x "$INSTALL_DIR"/*.sh 2>/dev/null || true
 # Install Python packages if pip is available
 if command -v pip3 &> /dev/null; then
     echo "Installing Python dependencies..."
-    pip3 install aiohttp requests --quiet 2>/dev/null || true
+    pip3 install aiohttp requests cryptography --quiet 2>/dev/null || true
 fi
 
 # Add hosts entry (requires admin, which installer has)
@@ -292,7 +292,7 @@ Getting Started:
 
 First Time Setup:
 • If Python packages weren't installed automatically, run:
-  pip3 install aiohttp requests
+  pip3 install aiohttp requests cryptography
 
 • For BepInEx, you may need to install it manually:
   Run: /Applications/DRL-Community/install-bepinex.sh

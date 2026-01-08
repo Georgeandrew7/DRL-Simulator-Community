@@ -120,7 +120,7 @@ REM Check if Python dependencies are installed
 python -c "import aiohttp" 2>nul
 if %errorlevel% neq 0 (
     echo [*] Installing Python dependencies...
-    python -m pip install aiohttp requests --quiet
+    python -m pip install aiohttp requests cryptography --quiet
 )
 
 start "DRL Mock Server" cmd /k "python mock_drl_backend.py --dual"

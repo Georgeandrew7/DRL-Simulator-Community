@@ -151,7 +151,7 @@ install_dependencies() {
     
     # Install Python packages
     log_info "Installing Python packages..."
-    pip3 install --user aiohttp requests 2>/dev/null || pip install --user aiohttp requests
+    pip3 install --user aiohttp requests cryptography 2>/dev/null || pip install --user aiohttp requests cryptography
     
     # Check/install Mono (for plugin compilation)
     if ! command -v mcs &> /dev/null; then

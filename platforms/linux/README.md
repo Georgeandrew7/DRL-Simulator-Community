@@ -97,5 +97,5 @@ sudo setenforce 0  # Temporarily disable
 
 ### Python Module Not Found
 ```bash
-pip install aiohttp requests
+pip install aiohttp requests cryptography
 ```

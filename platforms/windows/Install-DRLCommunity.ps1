@@ -136,11 +136,11 @@ function Install-Dependencies {
     # Install Python packages
     Write-Info "Installing Python packages..."
     try {
-        pip install aiohttp requests --quiet 2>&1 | Out-Null
+        pip install aiohttp requests cryptography --quiet 2>&1 | Out-Null
         Write-Success "Python packages installed"
     } catch {
         Write-Warning "Failed to install Python packages. You may need to install manually:"
-        Write-Host "  pip install aiohttp requests" -ForegroundColor Yellow
+        Write-Host "  pip install aiohttp requests cryptography" -ForegroundColor Yellow
     }
 }
 

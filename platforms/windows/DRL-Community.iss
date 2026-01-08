@@ -314,7 +314,7 @@ begin
     if PythonInstalled then
     begin
       WizardForm.StatusLabel.Caption := 'Installing Python packages...';
-      Exec('python', '-m pip install aiohttp requests --quiet', '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
+      Exec('python', '-m pip install aiohttp requests cryptography --quiet', '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
     end;
     
     WizardForm.StatusLabel.Caption := 'Installation complete!';

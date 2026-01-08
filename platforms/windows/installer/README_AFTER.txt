@@ -16,7 +16,7 @@ If this is your first installation, you may need to:
 
 • Install Python packages (if not done automatically):
   Open Command Prompt and run:
-  pip install aiohttp requests
+  pip install aiohttp requests cryptography
 
 • Install BepInEx manually (if auto-install failed):
   1. Download BepInEx from https://github.com/BepInEx/BepInEx/releases

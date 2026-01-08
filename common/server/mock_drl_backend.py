@@ -697,7 +697,10 @@ class DRLMockHandler(BaseHTTPRequestHandler):
         self.send_json_response(data)
 
 
-def generate_self_signed_cert():
+# Import cross-platform certificate generator
+from generate_cert import generate_self_signed_cert
+
+def _old_generate_self_signed_cert():
     """Generate self-signed certificate for HTTPS"""
     cert_path = '/tmp/drl_mock_cert.pem'
     key_path = '/tmp/drl_mock_key.pem'
