@@ -607,13 +607,18 @@ class DRLMockHandler(BaseHTTPRequestHandler):
         self.send_json_response(data)
     
     def handle_content(self):
-        """Handle content/maps requests - look up track by GUID if specified"""
-        # Parse query params to check for guid
+        """Handle content/maps requests - look up track by GUID if specified, or paginated browse"""
+        # Parse query params to check for guid or pagination
         from urllib.parse import urlparse, parse_qs
         parsed = urlparse(self.path)
         params = parse_qs(parsed.query)
         
         guid = params.get('guid', [None])[0]
+        page = params.get('page', [None])[0]
+        limit = params.get('limit', [None])[0]
+        sort_by = params.get('sort', ['score'])[0]
+        order = params.get('order', ['desc'])[0]
+        is_race_allowed = params.get('is-race-allowed', [None])[0]
         
         if guid:
             # Look up the FULL track data (including root scene) by guid
@@ -705,8 +710,56 @@ class DRLMockHandler(BaseHTTPRequestHandler):
                     "encoded": False,
                     "data": None
                 }
+        elif page is not None and limit is not None:
+            # PAGINATED BROWSE REQUEST - this is the Browse Maps UI
+            try:
+                page_num = int(page)
+                limit_num = int(limit)
+            except ValueError:
+                page_num = 1
+                limit_num = 6
+            
+            # Filter tracks
+            tracks_to_return = ALL_TRACKS[:]  # Make a copy
+            
+            # Filter by is-race-allowed if specified
+            if is_race_allowed == 'true':
+                tracks_to_return = [t for t in tracks_to_return if t.get('is-race-allowed', False)]
+            
+            # Sort tracks
+            reverse_order = (order == 'desc')
+            if sort_by == 'score':
+                tracks_to_return.sort(key=lambda x: x.get('score', 0), reverse=reverse_order)
+            elif sort_by == 'created-at':
+                tracks_to_return.sort(key=lambda x: x.get('created-at', ''), reverse=reverse_order)
+            elif sort_by == 'updated-at':
+                tracks_to_return.sort(key=lambda x: x.get('updated-at', ''), reverse=reverse_order)
+            elif sort_by == 'rating-count':
+                tracks_to_return.sort(key=lambda x: x.get('rating-count', 0), reverse=reverse_order)
+            
+            # Calculate pagination
+            total_tracks = len(tracks_to_return)
+            start_idx = (page_num - 1) * limit_num
+            end_idx = start_idx + limit_num
+            page_tracks = tracks_to_return[start_idx:end_idx]
+            
+            print(f"    BROWSE MAPS: page={page_num}, limit={limit_num}, sort={sort_by}, order={order}")
+            print(f"    Returning {len(page_tracks)} tracks (total: {total_tracks})")
+            
+            # Return PAGINATED response format
+            data = {
+                "success": True,
+                "message": None,
+                "encoded": False,
+                "paging": {
+                    "total": total_tracks,
+                    "page": page_num,
+                    "limit": limit_num
+                },
+                "data": page_tracks
+            }
         else:
-            # No guid specified, return all tracks (metadata only)
+            # No guid specified and no pagination, return all tracks (metadata only)
             data = {
                 "success": True,
                 "message": None,
